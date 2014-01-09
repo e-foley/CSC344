@@ -1,1 +1,1 @@
-Testing. (I really have no idea what I'm doing right now, but I'll learn.)
+This is Ed Foley's GitHub. Contact me at efoley@calpoly.edu with any questions.
