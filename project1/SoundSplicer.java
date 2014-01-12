@@ -1,74 +1,80 @@
 import java.io.*;
 
+/**
+ * The SoundSplicer class is simply a container for a method that decomposes a
+ * .wav file and splices it together to form a new piece of music (or sound).
+ * The WavFile class referred to herein is courtesy of Dr. Andrew Greensted.
+ * 
+ * @author Ed Foley 
+ * @version 01/11/14
+ */
 public class SoundSplicer
 {
+    /** Defines the quality of output files created with this class (8 bits mean samples range 0–255)*/
+    public static final int OUTPUT_BITS = 8;
+    
+    /**
+     * Transforms a .wav file by replacing the original audio at regular intervals
+     * with a randomly offset version of the same song. The new piece is saved
+     * in a new file.
+     * 
+     * @param  args[0]   The address of the input .wav file, sans extension
+     * @param  args[1]   The length of output desired, in seconds. In practice, this value is limited by the length of the original song
+     * @param  args[2]   The time interval (in seconds) devoted to playing the original song at its original timing before switching to the offset mode
+     * @param  args[3]   The time interval (in seconds) devoted to playing the original song at its offset timing before switching back to normal timing
+     * @param  args[4]   Whether to begin the output file with the original timing ("true") or offset timing ("false")
+     */
     public static void main(String[] args)
-    {
+    {        
         try
-        {
-            double duration = 30.0;     // Duration of output file [seconds]
+        {         
+            WavFile wavFileIn = WavFile.openWavFile(new File(args[0]+".wav")); // Open the wav file specified as the first argument
+            long numFramesIn = wavFileIn.getNumFrames();    // Read the number of frames in the original file
+            long sampleRate = wavFileIn.getSampleRate();    // Read sample rate [samples/second] of input file
+            int numChannels = wavFileIn.getNumChannels();   // Read number of channels in original file. We will match this in output
             
-            // Open the wav file specified as the first argument
-            WavFile wavFileIn = WavFile.openWavFile(new File("colony9.wav"));
+            // Calculate the number of frames required for the duration specified (#frames = (#frames/second)*seconds).
+            //   We can't write more frames than we read, so we don't try.
+            long numFramesOut = Math.min(numFramesIn,(long)(sampleRate*Double.parseDouble(args[1])));
             
-            // Display information about the wav file to the terminal for fun
-            //wavFileIn.display();
+            // Prepare an output file of the user-specified length with the properties determined above
+            WavFile wavFileOut = WavFile.newWavFile(new File(args[0]+"_out.wav"), numChannels, numFramesOut, OUTPUT_BITS, sampleRate);
             
-            // Read sample rate [samples/second] of input file so we can use this value for output file
-            int sampleRate = (int)(wavFileIn.getSampleRate());
-            
-            long numFramesIn = wavFileIn.getNumFrames();
-            
-            // Calculate the number of frames required for specified duration for easy reference
-            long numFramesOut = (long)(duration*sampleRate);
-            
-            // Prepare an output file with the length and sample rate determined prior
-            WavFile wavFileOut = WavFile.newWavFile(new File("colony9new.wav"), 2, numFramesOut, 16, sampleRate);
-            
-            // Get the number of audio channels in the wav file so that we may allocate buffer space accordingly
-            int numChannels = wavFileIn.getNumChannels();
-
-            //Create input buffer covering whole song for easy access.
+            // Create and load input buffer that covers the entire song.
+            // The readFrames() method loads all data into a 1-D array; thus
+            //   n-channel data of length i frames enters indices [ni], [ni+1], [ni+2], ..., [ni+n-1] for 0<=i<=frames.
+            // Why do this for readFrames() but not writeFrames()? Ask the author of the WavFile class.
             double[] bufferIn = new double[(int)(numFramesIn * numChannels)];
-            
-            //Create output buffer for new song. [0][] is left channel; [1][] is right.
-            double[][] bufferOut = new double[numChannels][(int)(numFramesOut)];
-            
-            // Initialize variable to count how many frames we've looked at
-            int framesRead = 0;
-
-            // Initialize a local frame counter
-            long frameCounter = 0;
-
-            
-            //0.9 and 0.2 work alright
-            
-            int maintainFrames = (int)(0.1 * sampleRate);
-            int switchFrames = (int)(0.1 * sampleRate);
-            boolean switchMode = false;
-            
             wavFileIn.readFrames(bufferIn, (int)numFramesIn);
             
-            int stateFrames = maintainFrames;
-            int randomOffset = 0;
+            // Create output buffer for new song. For two channels, [0][i] is left channel and [1][i] is right.
+            double[][] bufferOut = new double[numChannels][(int)(numFramesOut)];
             
+            // Set initial values of maintainFrames, switchFrames, and switchMode to user inputs 
+            int maintainFrames = (int)(Double.parseDouble(args[2]) * sampleRate);
+            int switchFrames = (int)(Double.parseDouble(args[3]) * sampleRate);
+            boolean switchMode = !Boolean.parseBoolean(args[4]);
             
+            // We define a variable to count how many frames are left in a given state before we switch to the other one.
+            // We initialize this to switchFrames or maintainFrames depending on switchMode.
+            int stateFrames = switchMode ? switchFrames : maintainFrames;
             
-            randomOffset = (int)((numFramesIn-switchFrames)*Math.random()); //TRY ONLY ONE RANDOM?
+            // Generate the random offset that will be used for the "switch" mode
+            int randomOffset = (int)((numFramesIn-switchFrames)*Math.random());
             
-            // Loop until all frames written
+            // Loop until all frames written or we run out of music to read in.
+            // Yes, the "if (switchMode)" branches can be condensed by a considerable amount, but doing so would likely make it
+            //   more difficult to adapt this code for additional functionality in the future.
             for (int i=0; i<numFramesOut; i++)
             {
                 if (switchMode)
                 {
-                    //What to do in "switch" mode
-                    bufferOut[0][i] = bufferIn[2*i+randomOffset];
-                    bufferOut[1][i] = bufferIn[2*i+1+randomOffset];
+                    // In switch mode, we reference a point in the song that has been randomly offset and move it to the present
+                    //   position in the new song.
+                    for (int j=0; j<numChannels; j++)
+                        bufferOut[j][i] = bufferIn[numChannels*i+randomOffset+j];
                     
-                    //bufferOut[0][i] = bufferIn[2*i+switchFrames];
-                    //bufferOut[1][i] = bufferIn[2*i+1+switchFrames];
-                    
-                    // Check whether it's time to leave the state
+                    // Check whether it's time to leave the state; if so, do it
                     if(--stateFrames <= 0)
                     {
                         stateFrames = maintainFrames;
@@ -78,27 +84,28 @@ public class SoundSplicer
                 
                 else
                 {
-                    //What to do in "maintain" mode
-                    bufferOut[0][i] = bufferIn[2*i];
-                    bufferOut[1][i] = bufferIn[2*i+1];
+                    // In maintain mode, we simply copy the song frame-by-frame
+                    for (int j=0; j<numChannels; j++)
+                        bufferOut[j][i] = bufferIn[numChannels*i+j];
                     
-                    // Check whether it's time to leave the state
+                    // Check whether it's time to leave the state; if so, do it
                     if(--stateFrames <= 0)
                     {
                         stateFrames = switchFrames;
                         switchMode = true;
-                        
-                        //randomOffset = (int)((numFramesIn-switchFrames)*Math.random());
                     }
                 }
             }
             
+            // Finally commit our output buffer to a file
             wavFileOut.writeFrames(bufferOut, (int)numFramesOut);
             
             // Close the wav files
             wavFileIn.close();
             wavFileOut.close();
         }
+        
+        // If something goes wrong, let the world know
         catch (Exception e)
         {
             System.err.println(e);
