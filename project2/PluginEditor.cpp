@@ -30,7 +30,7 @@ void NewProjectAudioProcessorEditor::paint (Graphics& g)
     g.fillAll (Colours::white);
     g.setColour (Colours::black);
     g.setFont (15.0f);
-    g.drawFittedText ("Hello World!",
+    g.drawFittedText ("No customizable settings. Sorry.",
                       0, 0, getWidth(), getHeight(),
                       Justification::centred, 1);
 }
