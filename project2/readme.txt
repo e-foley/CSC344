@@ -7,5 +7,5 @@ This code creates a VST instrument that forms amplitude-modulated half-square, h
 that decay when released. The rate of amplitude modulation is proportional to the note's
 frequency, but the decay rate is independent.
 
-Special thanks to James Bilous for his help in getting Juce running and to Kyle Schaefer
-for hanging in there with me.
+Special thanks to James Bilous for his help in getting Juce running and to Kyle Schaefer for
+hanging in there with me.
