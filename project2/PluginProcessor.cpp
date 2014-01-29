@@ -1,6 +1,7 @@
 /*
   Project 2 synth by Ed Foley.
-  Code modified from that provided by Dr. John Clements.
+  Code modified from that provided by Dr. John Clements which is heavily based
+    on the framework provided by the Juce library.
 */
 
 #include "PluginProcessor.h"
