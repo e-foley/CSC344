@@ -1,0 +1,14 @@
+Original song:	Click Clock Wood (Spring)
+Composer:	Grant Kirkhope
+Game:		Banjo-Kazooie
+Developer:	Rare
+Publisher:	Nintendo
+
+The parameter values used to generate the sample heard in class are below.
+
+Gain:		1.00
+Kill frequency:	523.25 (corresponds to C5)
+Distortion:	1.50
+
+Visit the link below to see this distortion parameter's effect on a sine wave:
+http://www.wolframalpha.com/input/?i=2.5*sin%28x%29%2F%281.5*abs%28sin%28x%29%29%2B1%29
