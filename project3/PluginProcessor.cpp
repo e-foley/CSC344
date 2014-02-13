@@ -204,13 +204,15 @@ void PlugTestAudioProcessor::processBlock (AudioSampleBuffer& buffer, MidiBuffer
 			const float in = channelData[i];			
 
 			delayData[dp] = in;
-			channelData[i] = in - 1.0f * delayData[(dp + offset) % delayBuffer.getNumSamples()];
+
+			// Apply offset operation to cancel desired frequency
+			channelData[i] = in - delayData[(dp + offset) % delayBuffer.getNumSamples()];
 
 			// Apply distortion. 0.0 distortion leads to no change to input, but as distortion increases, output
 			//     comes to resemble a square wave.
 			channelData[i] *= (distortion + 1.0f) / (distortion * abs(channelData[i]) + 1.0f);
 
-			// Include this so we don't exceed our amplitude limits, for example, if the current and delayed sample
+			// Include clamping so we don't exceed our amplitude limits, like when the current and delayed sample
 			//   summ to an absolute value greater than 1.0.
 			channelData[i] = jmax(jmin(channelData[i], 1.0f), -1.0f);
 
