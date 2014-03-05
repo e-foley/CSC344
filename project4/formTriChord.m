@@ -1,3 +1,4 @@
+% Find the relative pitches of a chord given a scale and a scale degree
 function [ chord ] = formTriChord( index, scale, targetInversion )
 
 offset = zeros(3,1);
@@ -11,7 +12,6 @@ switch (targetInversion)
         offset = [-3 0 2];
 end
 
+% Wrap chord to bounds of scale (target inversion may be overruled here)
 offset = mod(index + offset - 1, size(scale, 2)) + 1;
 chord = scale(offset);
-
-end
